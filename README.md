@@ -1,2 +1,5 @@
 # onenote2md
-npm package input MSonenote output markdown
+
+開發目標:
+
+onenote->docx->html->dom tree->md
