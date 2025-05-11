@@ -1,0 +1,33 @@
+{
+  "name": "onenote2md",
+  "version": "1.0.1",
+  "description": "Convert DOCX files to HTML with configurable options",
+  "main": "dist/index.js",
+  "bin": {
+    "onenote2md": "dist/cli.js"
+  },
+  "scripts": {
+    "build": "tsc && ts-node dist/copy-public.js",
+    "start": "ts-node src/cli.ts",
+    "test": "node test.js",
+    "prepare": "npm run build"
+  },
+  "keywords": [
+    "docx",
+    "html",
+    "converter"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@types/fs-extra": "^11.0.4",
+    "@types/node": "^22.15.17",
+    "axios": "^1.9.0",
+    "commander": "^13.1.0",
+    "fs-extra": "^11.3.0",
+    "mammoth": "^1.9.0",
+    "pubhtmlhere": "^2.2.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.8.3"
+  }
+}

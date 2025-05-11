@@ -1,0 +1,37 @@
+[
+    {
+        "text": "輸入",
+        "items": [
+            {
+                "text": "內科",
+                "link": "內科.docx"
+            },
+            {
+                "text": "外科",
+                "link": "外科.docx"
+            },
+            {
+                "text": "婦產科",
+                "link": "婦產科.docx"
+            }
+        ]
+    },
+    {
+        "text": "輸出",
+        "items": [
+            {
+                "text": "內科",
+                "link": "/InternalMedicineDepartment"
+            },
+            {
+                "text": "外科",
+                "link": "/SurgicalDepartment",
+                "display": "none"
+            },
+            {
+                "text": "婦產科",
+                "link": "/ObstetricsGynecologyDepartment"
+            }
+        ]
+    }
+]
