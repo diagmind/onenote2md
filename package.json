@@ -1,6 +1,6 @@
 {
   "name": "onenote2md",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Convert DOCX files to HTML with configurable options",
   "main": "dist/index.js",
   "bin": {
