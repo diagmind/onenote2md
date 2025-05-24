@@ -37,11 +37,25 @@ Options:
   -o, --output <path>         Output directory path (default:./output)
   -w, --dev                   Start server at http://127.0.0.1:48489 to view the HTML output
   -e, --debug                 Enable debug mode to log each processing stage
+  -m, --markdown              Download markdown files from generated HTML pages (requires --dev)
+  -p, --port <number>         Port for the dev server (default: 48489)
+  -t, --wait <ms>             Wait time in milliseconds for markdown download process (default: 5000)
+  -M, --autoMd                Combination of -s local -m --dev with auto-stop server when all markdown files are downloaded
   -h, --help                  display help for command
 ```
 
 
 使用-u配合-b會自動在-u的超連結後面加上-b的檔名陣列；
+
+### The `-M` Parameter
+
+The `-M` or `--autoMd` parameter provides a convenient way to:
+1. Process files locally (`-s local`)
+2. Start a development server (`--dev`)
+3. Download all markdown files (`-m`)
+4. Automatically stop the server when all markdown files have been downloaded
+
+This is especially useful for batch processing where you want to convert docx files to markdown and have the process terminate automatically once complete.
 
 ### Examples
 
@@ -49,11 +63,18 @@ Options:
 # Convert remote DOCX files
 docx2html -u "https://diagmindtw.com/rawdocx/serve-docx.php?file=" -b "https://diagmindtw.com/kcms0.php#edit" -s remote
 
+# ...
+
+node dist/cli.js -u "https://diagmindtw.com/rawdocx/serve-docx.php?file=" -b "./kcms0.php" -M
+
 # Convert local DOCX files with development server (還沒測試)
 docx2html -b "./config.json" -s local -o "./html-output" -w
 
 # Enable debug mode
 docx2html -b "./config.json" -s local -e
+
+# Download markdown files automatically with auto-stop when complete
+docx2html -b "./config.json" -o "./html-output" -M
 ```
 
 ## Configuration File

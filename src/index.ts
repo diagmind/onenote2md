@@ -6,6 +6,11 @@ import { createHtmlFiles } from './html-generator';
 import { startDevServer } from './dev-server';
 import { DebugLogger } from './debug';
 import { CLIOptions } from './types';
+import { downloadMarkdownFromHtmlPages } from './markdown-downloader';
+
+// Export the markdown downloader function
+export { downloadMarkdownFromHtmlPages } from './markdown-downloader';
+export { startServer, stopServer } from './dev-server';
 
 /**
  * Main function that processes DOCX files and converts them to HTML
@@ -66,9 +71,7 @@ export async function docx2html(options: CLIOptions): Promise<void> {
       console.log(`Deleting temporary directory: ${docxViewDir}...`);
       await fs.remove(docxViewDir);
       console.log('Temporary directory deleted successfully.');
-    }
-
-    // Step 7-8: Start development server if requested
+    }    // Step 7-8: Start development server if requested
     if (options.dev) {
       startDevServer(outputDir);
     }
