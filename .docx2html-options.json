@@ -4,7 +4,7 @@
   "wait": "5000",
   "url": "https://diagmindtw.com/rawdocx/serve-docx.php?file=",
   "configUrl": "https://diagmindtw.com/kcms0.php#edit",
-  "source": "remote",
+  "source": "local",
   "markdown": true,
   "dev": true
 }
