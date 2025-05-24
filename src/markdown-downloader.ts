@@ -142,23 +142,33 @@ export async function downloadMarkdownFromHtmlPages(
     console.log('\n===== Starting download process for each section =====');
     for (let i = 0; i < chapters.length; i++) {
       const chapter = chapters[i];
-      
-      if (chapter.sections.length === 0) {
+        if (chapter.sections.length === 0) {
         // If no sections found, try to download the main page as a single document
         console.log(`\nProcessing chapter ${i+1}/${chapters.length}: ${chapter.name} (no sections)`);
-        await downloadMarkdownFromPage(page, `${baseUrl}/${chapter.path}/index.html`, downloadDir, `${chapter.name}-main`, waitTimeMs);
+        
+        const filename = {
+          chapterPath: chapter.path,
+          chapterName: chapter.name,
+          sectionNumber: 'main'
+        };
+        
+        await downloadMarkdownFromPage(page, `${baseUrl}/${chapter.path}/index.html`, downloadDir, filename, waitTimeMs);
         continue;
       }
       
       for (let j = 0; j < chapter.sections.length; j++) {
         const section = chapter.sections[j];
         console.log(`\nProcessing chapter ${i+1}/${chapters.length}, section ${j+1}/${chapter.sections.length}: ${chapter.name} - ${section.title}`);
-        
-        // Create URL with section hash
+          // Create URL with section hash
         const url = `${baseUrl}/${chapter.path}/index.html#${section.id}`;
         
-        // Generate filename
-        const filename = `${chapter.name}-${section.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}`;
+        // Generate initial filename with chapter path and section number
+        // Final filename will be constructed after getting the page title
+        const filename = {
+          chapterPath: chapter.path,
+          chapterName: chapter.name,
+          sectionNumber: section.id
+        };
         
         await downloadMarkdownFromPage(page, url, downloadDir, filename, waitTimeMs);
       }
@@ -186,7 +196,7 @@ async function downloadMarkdownFromPage(
   page: any, // Using 'any' instead of puppeteer.Page to avoid namespace issue
   url: string, 
   downloadDir: string, 
-  filenamePrefix: string,
+  filenameInfo: string | { chapterPath: string, chapterName: string, sectionNumber: string },
   waitTimeMs: number
 ): Promise<void> {
   try {
@@ -262,8 +272,7 @@ async function downloadMarkdownFromPage(
     // Wait for download to complete
     console.log(`Waiting ${waitTimeMs}ms for download to complete...`);
     await new Promise(resolve => setTimeout(resolve, waitTimeMs));
-    
-    // Rename the most recently downloaded file
+      // Rename the most recently downloaded file
     const files = await fs.readdir(downloadDir);
     if (files.length > 0) {
       // Sort files by modified time (newest first)
@@ -280,12 +289,28 @@ async function downloadMarkdownFromPage(
       
       // Only rename markdown files
       if (latestFile.endsWith('.md')) {
-        // Use page title if available, otherwise use the provided prefix
-        let newFileName = filenamePrefix;
-        if (pageTitle) {
-          newFileName = `${filenamePrefix}-${pageTitle.replace(/[^a-z0-9]/gi, '_').toLowerCase()}`;
+        let newFileName = '';
+        
+        // Get section number from URL hash
+        const sectionNumber = url.includes('#') ? url.split('#').pop() : '1';
+        
+        if (typeof filenameInfo === 'string') {
+          // Legacy case: use the string directly
+          newFileName = `${filenameInfo}.md`;
+        } else {
+          // New format: chapter path-page title-section number
+          // Use the actual folder path from URL as the chapter name
+          const chapterPath = filenameInfo.chapterPath;
+          
+          // Use the page title from the DOM, keeping the original characters (including Chinese)
+          const pageTitleForFilename = pageTitle || filenameInfo.chapterName;
+          
+          // Create the filename in the requested format
+          newFileName = `${chapterPath}-${pageTitleForFilename}-${sectionNumber}.md`;
+          
+          // Replace illegal filename characters
+          newFileName = newFileName.replace(/[\\/:*?"<>|]/g, '_');
         }
-        newFileName += '.md';
         
         const oldPath = path.join(downloadDir, latestFile);
         const newPath = path.join(downloadDir, newFileName);
