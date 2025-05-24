@@ -12,6 +12,7 @@ export async function setupVitePress(markdownDir: string, outputDir: string): Pr
   console.log('\n=== Starting VitePress setup ===');
   
   try {
+    console.log("check point1");
     // Create .vitepress directory
     const vitepressDir = path.join(markdownDir, '.vitepress');
     await fs.ensureDir(vitepressDir);
@@ -26,23 +27,25 @@ export async function setupVitePress(markdownDir: string, outputDir: string): Pr
     
     // Generate sidebar based on markdown files
     const sidebar = await generateSidebar(markdownDir);
+        console.log("check point2");
     
     // Update the config file with the generated sidebar
     await updateVitepressConfig(configTargetPath, sidebar);
-    
+        console.log("check point3");
     // Create a default index.md file
     await createDefaultIndexFile(markdownDir, sidebar);
-    
+        console.log("check point4");
     // Install VitePress if not already installed
     await installVitepress();
-    
+        console.log("check point5");
     // Build VitePress site
     const vitepressDistDir = path.join(outputDir, 'vitepress_dist');
     await buildVitepress(markdownDir, vitepressDistDir);
     
     console.log(`\n=== VitePress setup completed. Output in: ${vitepressDistDir} ===\n`);
   } catch (error) {
-    console.error(`Error setting up VitePress: ${error}`);
+    const lineNum = new Error().stack?.split('\n')[1]?.match(/\:(\d+)\:(\d+)\)$/)?.[1] || 'unknown';
+    console.error(`Error setting up VitePress [line ${lineNum}]: ${error}`); // Line 39
     throw error;
   }
 }
@@ -265,28 +268,47 @@ async function installVitepress(): Promise<void> {
   console.log('Installing VitePress and its dependencies...');
   
   return new Promise<void>((resolve, reject) => {
-    // Check if VitePress is already installed
-    const npm = process.platform === 'win32' ? 'npm.cmd' : 'npm';
-    
-    // Install both vitepress and shiki for syntax highlighting
-    const install = spawn(npm, ['install', '--save-dev', 'vitepress', '@shikijs/core']);
-    
-    install.stdout.on('data', (data) => {
-      console.log(`${data}`);
-    });
-    
-    install.stderr.on('data', (data) => {
-      console.error(`${data}`);
-    });
-    
-    install.on('close', (code) => {
-      if (code !== 0) {
-        reject(new Error(`VitePress installation failed with code ${code}`));
-      } else {
-        console.log('VitePress installed successfully');
-        resolve();
-      }
-    });
+    try {
+      // Check if VitePress is already installed
+      const npm = process.platform === 'win32' ? 'npm.cmd' : 'npm';
+      
+      // Install both vitepress and shiki for syntax highlighting
+      const install = spawn(
+        npm, 
+        ['install', '--save-dev', 'vitepress', '@shikijs/core'], 
+        {
+          stdio: 'pipe',
+          cwd: process.cwd(),
+          env: { ...process.env },
+          shell: true
+        }
+      );
+      
+      install.stdout.on('data', (data) => {
+        console.log(`${data}`);
+      });
+      
+      install.stderr.on('data', (data) => {
+        console.error(`${data}`);
+      });
+      
+      install.on('error', (err) => {
+        console.error(`Failed to start npm install process: ${err.message}`);
+        reject(err);
+      });
+      
+      install.on('close', (code) => {
+        if (code !== 0) {
+          reject(new Error(`VitePress installation failed with code ${code}`));
+        } else {
+          console.log('VitePress installed successfully');
+          resolve();
+        }
+      });
+    } catch (err) {
+      console.error(`Exception during VitePress installation: ${err}`);
+      reject(err);
+    }
   });
 }
 

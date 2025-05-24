@@ -18,7 +18,8 @@
     "converter"
   ],
   "author": "",
-  "license": "ISC",  "dependencies": {
+  "license": "ISC",
+  "dependencies": {
     "@types/fs-extra": "^11.0.4",
     "@types/node": "^22.15.17",
     "@types/puppeteer": "^7.0.4",
@@ -29,7 +30,10 @@
     "pubhtmlhere": "^2.2.0",
     "puppeteer": "^22.11.0",
     "ts-node": "^10.9.2",
-    "typescript": "^5.8.3",
-    "vitepress":"*"
+    "typescript": "^5.8.3"
+  },
+  "devDependencies": {
+    "@shikijs/core": "^3.4.2",
+    "vitepress": "^1.6.3"
   }
 }
