@@ -24,4 +24,5 @@ export interface CLIOptions {
   port?: string;
   wait?: string;
   autoMd?: boolean; // New option for the -M flag
+  vitepress?: boolean; // New option for the -v flag
 }

@@ -6,6 +6,7 @@ import fs from 'fs-extra';
 import { docx2html } from './index';
 import { CLIOptions } from './types';
 import { downloadMarkdownFromHtmlPages } from './markdown-downloader';
+import { setupVitePress } from './vitepress-setup';
 
 // Get package version from package.json
 const { version } = require('../package.json');
@@ -26,9 +27,9 @@ program
   .option('-p, --port <number>', 'Port for the dev server', '48489')
   .option('-t, --wait <ms>', 'Wait time in milliseconds for markdown download process', '5000')
   .option('-M, --autoMd', 'Combination of -s local -m --dev with auto-stop server when all markdown files are downloaded')
+  .option('-v, --vitepress', 'Setup VitePress and build a static documentation site from markdown files')
   .action(async (options: CLIOptions) => {
-    try {
-      // Handle the new autoMd flag
+    try {      // Handle the new autoMd flag
       if (options.autoMd) {
         // AutoMd flag cannot be used with source, markdown, or dev flags
         if (options.source || options.markdown || options.dev) {
@@ -39,6 +40,19 @@ program
         options.source = 'local';
         options.markdown = true;
         options.dev = true;
+      }
+        // Make sure vitepress only runs after markdown download completes
+      if (options.vitepress && !options.markdown) {
+        console.error('Error: The -v (--vitepress) option requires -m (--markdown) or -M (--autoMd) option to be enabled.');
+        console.log('VitePress requires markdown files to build the documentation site.');
+        process.exit(1);
+      }
+      
+      // If both vitepress and markdown are enabled without dev server, remind user about the dev server requirement
+      if (options.vitepress && options.markdown && !options.dev) {
+        console.error('Error: The -v and -m options together require --dev to be enabled.');
+        console.log('Please run the command with --dev option to enable the dev server for markdown processing.');
+        process.exit(1);
       }
       
       // Normalize paths
@@ -66,6 +80,12 @@ program
           console.error('Error: The --markdown option requires --dev to be enabled.');
           console.log('Please run the command with --dev option to download markdown files.');
         }
+      }      // Setup VitePress and build the site if the vitepress option is enabled
+      if (options.vitepress) {
+        console.log('Setting up VitePress and building the site from markdown files...');
+        const outputPath = options.output || './output';
+        const markdownDir = path.join(outputPath, 'markdown');
+        await setupVitePress(markdownDir, outputPath);
       }
     } catch (error) {
       console.error(`Error: ${error}`);
@@ -78,8 +98,8 @@ program  .command('download-markdown')
   .description('Download markdown files from previously generated HTML pages')
   .option('-o, --output <path>', 'Output directory path with HTML files', './output')
   .option('-p, --port <number>', 'Port to use for local server', '48489')
-  .option('-t, --wait <ms>', 'Wait time in milliseconds for each download', '5000')
-  .option('-a, --auto-stop', 'Automatically stop the server after all markdown files are downloaded')
+  .option('-t, --wait <ms>', 'Wait time in milliseconds for each download', '5000')  .option('-a, --auto-stop', 'Automatically stop the server after all markdown files are downloaded')
+  .option('-v, --vitepress', 'Set up VitePress and build the site after downloading markdown files')
   .action(async (cmdOptions) => {
     try {
       const outputDir = path.resolve(cmdOptions.output);
@@ -96,6 +116,12 @@ program  .command('download-markdown')
       const devServer = require('./dev-server');
       await devServer.startServer(outputDir, parseInt(cmdOptions.port));        console.log(`Starting markdown download process from: ${outputDir}`);
       await downloadMarkdownFromHtmlPages(outputDir, baseUrl, waitTime, cmdOptions.autoStop || false);
+      
+      // Set up VitePress if the option is enabled
+      if (cmdOptions.vitepress) {
+        const markdownDir = path.join(outputDir, 'markdown');
+        await setupVitePress(markdownDir, outputDir);
+      }
       
       // Stop the server if not in auto-stop mode
       if (!(cmdOptions.autoStop || false)) {
