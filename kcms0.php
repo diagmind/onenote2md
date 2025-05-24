@@ -5,6 +5,9 @@
             {
                 "text": "\u5916\u79d1",
                 "link": "\u5916\u79d1.docx"
+            },{
+                "text": "\u5152\u79d1",
+                "link": "\u5152\u79d1.docx"
             }
         ]
     },
@@ -14,6 +17,10 @@
             {
                 "text": "\u5916\u79d1",
                 "link": "\/SurgicalDepartment"
+            },
+            {
+                "text": "\u5152\u79d1",
+                "link": "\/ChildDepartment"
             }
         ]
     }
