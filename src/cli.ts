@@ -25,8 +25,22 @@ program
   .option('-m, --markdown', 'Download markdown files from generated HTML pages')
   .option('-p, --port <number>', 'Port for the dev server', '48489')
   .option('-t, --wait <ms>', 'Wait time in milliseconds for markdown download process', '5000')
+  .option('-M, --autoMd', 'Combination of -s local -m --dev with auto-stop server when all markdown files are downloaded')
   .action(async (options: CLIOptions) => {
     try {
+      // Handle the new autoMd flag
+      if (options.autoMd) {
+        // AutoMd flag cannot be used with source, markdown, or dev flags
+        if (options.source || options.markdown || options.dev) {
+          console.error('Error: The -M option cannot be used with -s, -m, or --dev options.');
+          process.exit(1);
+        }
+        // Set the equivalent options
+        options.source = 'local';
+        options.markdown = true;
+        options.dev = true;
+      }
+      
       // Normalize paths
       if (options.output) {
         options.output = path.resolve(options.output);
@@ -45,10 +59,9 @@ program
         const baseUrl = `http://localhost:${options.port || '48489'}`;
         const waitTime = parseInt(options.wait || '5000');
         const outputPath = options.output || './output'; // Provide default path if undefined
-        
-        if (options.dev) {
+          if (options.dev) {
           console.log(`Starting markdown download process with base URL: ${baseUrl}`);
-          await downloadMarkdownFromHtmlPages(outputPath, baseUrl, waitTime);
+          await downloadMarkdownFromHtmlPages(outputPath, baseUrl, waitTime, options.autoMd || false);
         } else {
           console.error('Error: The --markdown option requires --dev to be enabled.');
           console.log('Please run the command with --dev option to download markdown files.');
@@ -61,12 +74,12 @@ program
   });
 
 // Add a separate command just for downloading markdown
-program
-  .command('download-markdown')
+program  .command('download-markdown')
   .description('Download markdown files from previously generated HTML pages')
   .option('-o, --output <path>', 'Output directory path with HTML files', './output')
   .option('-p, --port <number>', 'Port to use for local server', '48489')
   .option('-t, --wait <ms>', 'Wait time in milliseconds for each download', '5000')
+  .option('-a, --auto-stop', 'Automatically stop the server after all markdown files are downloaded')
   .action(async (cmdOptions) => {
     try {
       const outputDir = path.resolve(cmdOptions.output);
@@ -81,13 +94,13 @@ program
       
       // Start the server
       const devServer = require('./dev-server');
-      await devServer.startServer(outputDir, parseInt(cmdOptions.port));
+      await devServer.startServer(outputDir, parseInt(cmdOptions.port));        console.log(`Starting markdown download process from: ${outputDir}`);
+      await downloadMarkdownFromHtmlPages(outputDir, baseUrl, waitTime, cmdOptions.autoStop || false);
       
-      console.log(`Starting markdown download process from: ${outputDir}`);
-      await downloadMarkdownFromHtmlPages(outputDir, baseUrl, waitTime);
-      
-      // Stop the server
-      process.exit(0);
+      // Stop the server if not in auto-stop mode
+      if (!(cmdOptions.autoStop || false)) {
+        process.exit(0);
+      }
     } catch (error) {
       console.error(`Error downloading markdown: ${error}`);
       process.exit(1);

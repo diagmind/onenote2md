@@ -329,7 +329,8 @@ export async function startServer(outputDir: string, port: number = 48489): Prom
 /**
  * Stop the server if it's running
  */
-export function stopServer(): void {    if (serverProcess) {
+export function stopServer(): void {
+  if (serverProcess) {
     console.log('Stopping server...');
     try {
       if (process.platform === 'win32' && serverProcess.pid) {
@@ -338,13 +339,43 @@ export function stopServer(): void {    if (serverProcess) {
           shell: true,
           stdio: 'ignore'
         });
+        
+        // In case taskkill doesn't work, try native kill as a fallback
+        try {
+          serverProcess.kill('SIGTERM');
+        } catch (e) {
+          // Ignore errors from the fallback method
+        }
       } else {
         // On Unix systems
         serverProcess.kill('SIGTERM');
       }
     } catch (error) {
       console.error(`Error stopping server: ${error}`);
+      
+      // Last resort: try to exit the process entirely
+      console.log('Server couldn\'t be stopped gracefully. Exiting the process...');
+      setTimeout(() => {
+        process.exit(0);
+      }, 1000);
     }
     serverProcess = null;
+  } else {
+    console.log('No server process running. Nothing to stop.');
+    
+    // If autoMd is enabled but no server process was found,
+    // we should exit the process to make sure it doesn't hang
+    const cliOptionsPath = process.env.DOCX2HTML_OPTIONS_PATH;
+    if (cliOptionsPath) {
+      try {
+        const options = require(cliOptionsPath);
+        if (options.autoMd) {
+          console.log('Auto-Markdown mode active. Exiting process...');
+          process.exit(0);
+        }
+      } catch (e) {
+        // If we can't read the options file, just continue
+      }
+    }
   }
 }

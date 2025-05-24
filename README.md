@@ -40,11 +40,22 @@ Options:
   -m, --markdown              Download markdown files from generated HTML pages (requires --dev)
   -p, --port <number>         Port for the dev server (default: 48489)
   -t, --wait <ms>             Wait time in milliseconds for markdown download process (default: 5000)
+  -M, --autoMd                Combination of -s local -m --dev with auto-stop server when all markdown files are downloaded
   -h, --help                  display help for command
 ```
 
 
 使用-u配合-b會自動在-u的超連結後面加上-b的檔名陣列；
+
+### The `-M` Parameter
+
+The `-M` or `--autoMd` parameter provides a convenient way to:
+1. Process files locally (`-s local`)
+2. Start a development server (`--dev`)
+3. Download all markdown files (`-m`)
+4. Automatically stop the server when all markdown files have been downloaded
+
+This is especially useful for batch processing where you want to convert docx files to markdown and have the process terminate automatically once complete.
 
 ### Examples
 
@@ -57,6 +68,9 @@ docx2html -b "./config.json" -s local -o "./html-output" -w
 
 # Enable debug mode
 docx2html -b "./config.json" -s local -e
+
+# Download markdown files automatically with auto-stop when complete
+docx2html -b "./config.json" -o "./html-output" -M
 ```
 
 ## Configuration File

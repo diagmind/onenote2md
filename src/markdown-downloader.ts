@@ -20,7 +20,8 @@ interface Chapter {
 export async function downloadMarkdownFromHtmlPages(
   outputDir: string,
   baseUrl: string = 'http://127.0.0.1:48489',
-  waitTimeMs: number = 5000
+  waitTimeMs: number = 5000,
+  autoStopServer: boolean = false
 ): Promise<void> {
   let browser;
   
@@ -79,6 +80,10 @@ export async function downloadMarkdownFromHtmlPages(
 
     // First pass: collect all sections from each chapter
     console.log('Collecting chapter and section information...');
+    
+    // Track the expected total number of markdown files
+    let totalExpectedFiles = 0;
+    
     for (let i = 0; i < chapters.length; i++) {
       const chapter = chapters[i];
       const url = `${baseUrl}/${chapter.path}/index.html`;
@@ -129,9 +134,12 @@ export async function downloadMarkdownFromHtmlPages(
         
         if (sectionInfo.length === 0) {
           console.log(`No sections found for chapter ${chapter.name}`);
+          // If no sections found, we'll have at least one file for the main page
+          totalExpectedFiles++;
         } else {
           console.log(`Found ${sectionInfo.length} sections for chapter ${chapter.name}`);
           chapter.sections = sectionInfo;
+          totalExpectedFiles += sectionInfo.length;
         }
       } catch (error) {
         console.error(`Error scanning chapter ${chapter.name}: ${error}`);
@@ -140,6 +148,11 @@ export async function downloadMarkdownFromHtmlPages(
     
     // Second pass: download markdown files for each section
     console.log('\n===== Starting download process for each section =====');
+    console.log(`Total expected markdown files: ${totalExpectedFiles}`);
+    
+    // Track the number of successfully downloaded files
+    let downloadedFilesCount = 0;
+    
     for (let i = 0; i < chapters.length; i++) {
       const chapter = chapters[i];
         if (chapter.sections.length === 0) {
@@ -151,8 +164,11 @@ export async function downloadMarkdownFromHtmlPages(
           chapterName: chapter.name,
           sectionNumber: 'main'
         };
-        
-        await downloadMarkdownFromPage(page, `${baseUrl}/${chapter.path}/index.html`, downloadDir, filename, waitTimeMs);
+          const success = await downloadMarkdownFromPage(page, `${baseUrl}/${chapter.path}/index.html`, downloadDir, filename, waitTimeMs);
+        if (success) {
+          downloadedFilesCount++;
+          console.log(`Progress: ${downloadedFilesCount}/${totalExpectedFiles} files downloaded (${Math.round((downloadedFilesCount/totalExpectedFiles)*100)}%)`);
+        }
         continue;
       }
       
@@ -161,8 +177,7 @@ export async function downloadMarkdownFromHtmlPages(
         console.log(`\nProcessing chapter ${i+1}/${chapters.length}, section ${j+1}/${chapter.sections.length}: ${chapter.name} - ${section.title}`);
           // Create URL with section hash
         const url = `${baseUrl}/${chapter.path}/index.html#${section.id}`;
-        
-        // Generate initial filename with chapter path and section number
+          // Generate initial filename with chapter path and section number
         // Final filename will be constructed after getting the page title
         const filename = {
           chapterPath: chapter.path,
@@ -170,12 +185,49 @@ export async function downloadMarkdownFromHtmlPages(
           sectionNumber: section.id
         };
         
-        await downloadMarkdownFromPage(page, url, downloadDir, filename, waitTimeMs);
+        const success = await downloadMarkdownFromPage(page, url, downloadDir, filename, waitTimeMs);
+        if (success) {
+          downloadedFilesCount++;
+          console.log(`Progress: ${downloadedFilesCount}/${totalExpectedFiles} files downloaded (${Math.round((downloadedFilesCount/totalExpectedFiles)*100)}%)`);
+        }
+        downloadedFilesCount++;
       }
     }
-    
-    console.log('\nMarkdown download process completed successfully!');
+      // Calculate completion percentage
+    const completionPercentage = Math.round((downloadedFilesCount / totalExpectedFiles) * 100);
+    console.log('\n===== Markdown Download Summary =====');
+    console.log(`Download process completed with ${completionPercentage}% success rate`);
+    console.log(`Files downloaded: ${downloadedFilesCount}/${totalExpectedFiles}`);
     console.log(`All markdown files saved to: ${downloadDir}`);
+      // Auto-stop the server if requested
+    if (autoStopServer) {
+      console.log('\n===== Auto-Stop Feature =====');
+      console.log('Auto-stop enabled: Stopping the dev server now...');
+      
+      try {
+        // Import the stopServer function
+        const { stopServer } = await import('./dev-server');
+        stopServer();
+        
+        console.log('Dev server stopped successfully.');
+        
+        // Exit the process if running in auto mode
+        console.log('All markdown files have been downloaded. Exiting in 3 seconds...');
+        
+        // Give some time for the final logs to be visible
+        setTimeout(() => {
+          process.exit(0);
+        }, 3000);
+      } catch (error) {
+        console.error(`Error stopping dev server: ${error}`);
+        
+        // Force exit after a timeout even if there's an error
+        console.log('Forcing exit in 5 seconds...');
+        setTimeout(() => {
+          process.exit(1);
+        }, 5000);
+      }
+    }
     
   } catch (error) {
     console.error(`Error downloading markdown files: ${error}`);
@@ -198,7 +250,7 @@ async function downloadMarkdownFromPage(
   downloadDir: string, 
   filenameInfo: string | { chapterPath: string, chapterName: string, sectionNumber: string },
   waitTimeMs: number
-): Promise<void> {
+): Promise<boolean> { // Return success status
   try {
     // Navigate to the page with full page reload
     console.log(`Navigating to ${url}...`);
@@ -317,12 +369,20 @@ async function downloadMarkdownFromPage(
         
         await fs.rename(oldPath, newPath);
         console.log(`Renamed downloaded file to: ${newFileName}`);
+        
+        // Return true to indicate successful download
+        console.log(`Successfully downloaded markdown from: ${url}`);
+        return true;
       }
     }
     
-    console.log(`Successfully downloaded markdown from: ${url}`);
+    // If we get here but no file was renamed, it might be due to network issues or UI changes
+    // Consider it a failed download
+    console.log(`No markdown file was found for: ${url}`);
+    return false;
   } catch (error) {
     console.error(`Error processing ${url}: ${error}`);
     console.log('Continuing with next page...');
+    return false; // Return failure status
   }
 }

@@ -71,9 +71,7 @@ export async function docx2html(options: CLIOptions): Promise<void> {
       console.log(`Deleting temporary directory: ${docxViewDir}...`);
       await fs.remove(docxViewDir);
       console.log('Temporary directory deleted successfully.');
-    }
-
-    // Step 7-8: Start development server if requested
+    }    // Step 7-8: Start development server if requested
     if (options.dev) {
       startDevServer(outputDir);
     }

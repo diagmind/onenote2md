@@ -23,4 +23,5 @@ export interface CLIOptions {
   markdown?: boolean;
   port?: string;
   wait?: string;
+  autoMd?: boolean; // New option for the -M flag
 }
