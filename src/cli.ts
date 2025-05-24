@@ -93,44 +93,6 @@ program
     }
   });
 
-// Add a separate command just for downloading markdown
-/*program  .command('download-markdown')
-  .description('Download markdown files from previously generated HTML pages')
-  .option('-o, --output <path>', 'Output directory path with HTML files', './output')
-  .option('-p, --port <number>', 'Port to use for local server', '48489')
-  .option('-t, --wait <ms>', 'Wait time in milliseconds for each download', '5000')  .option('-a, --auto-stop', 'Automatically stop the server after all markdown files are downloaded')
-  .option('-v, --vitepress', 'Set up VitePress and build the site after downloading markdown files')
-  .action(async (cmdOptions) => {
-    try {
-      const outputDir = path.resolve(cmdOptions.output);
-      const baseUrl = `http://localhost:${cmdOptions.port}`;
-      const waitTime = parseInt(cmdOptions.wait);
-      
-      // Check if output directory exists
-      if (!await fs.pathExists(outputDir)) {
-        console.error(`Error: Output directory ${outputDir} does not exist.`);
-        process.exit(1);
-      }
-      
-      // Start the server
-      const devServer = require('./dev-server');
-      await devServer.startServer(outputDir, parseInt(cmdOptions.port));        console.log(`Starting markdown download process from: ${outputDir}`);
-      await downloadMarkdownFromHtmlPages(outputDir, baseUrl, waitTime, cmdOptions.autoStop || false);
-      
-      // Set up VitePress if the option is enabled
-      if (cmdOptions.vitepress) {
-        const markdownDir = path.join(outputDir, 'markdown');
-        await setupVitePress(markdownDir, outputDir);
-      }
-      
-      // Stop the server if not in auto-stop mode
-      if (!(cmdOptions.autoStop || false)) {
-        process.exit(0);
-      }
-    } catch (error) {
-      console.error(`Error downloading markdown: ${error}`);
-      process.exit(1);
-    }
-  });*/
+
 
 program.parse(process.argv);
