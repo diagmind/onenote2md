@@ -37,7 +37,10 @@ export async function setupVitePress(markdownDir: string, outputDir: string): Pr
     // Create a default index.md file
     await createDefaultIndexFile(markdownDir, sidebar);
     console.log("check point4");
-
+    
+    // Install VitePress as a development dependency
+    await installVitePress(markdownDir);
+    console.log("check point5");
     // Build VitePress site
     const vitepressDistDir = path.join(outputDir, 'vitepress_dist');
     await buildVitepress(markdownDir, vitepressDistDir);
@@ -262,6 +265,50 @@ export default defineConfig({
 }
 
 /**
+ * Install VitePress as a development dependency
+ * @param workDir Directory where npm command will be executed
+ */
+async function installVitePress(workDir: string): Promise<void> {
+  console.log('Installing VitePress as a development dependency...');
+
+  return new Promise<void>((resolve, reject) => {
+    
+    const install = spawn('npm', [
+      'add',
+      '-D',
+      'vitepress'
+    ], {
+      stdio: 'pipe',
+      shell: true,
+      cwd: workDir, // Use the provided directory instead of process.cwd()
+      env: process.env
+    });
+
+    install.stdout.on('data', (data) => {
+      console.log(`${data}`);
+    });
+
+    install.stderr.on('data', (data) => {
+      console.error(`${data}`);
+    });
+
+    install.on('close', (code) => {
+      if (code !== 0) {
+        reject(new Error(`VitePress installation failed with code ${code}`));
+      } else {
+        console.log('VitePress installed successfully');
+        resolve();
+      }
+    });
+
+    install.on('error', (err) => {
+  console.error('Failed to start VitePress build process:', err);
+  reject(err);
+});
+  });
+}
+
+/**
  * Build VitePress site
  */
 async function buildVitepress(markdownDir: string, outputDir: string): Promise<void> {
@@ -272,35 +319,35 @@ async function buildVitepress(markdownDir: string, outputDir: string): Promise<v
   await fs.ensureDir(vitepressDistDir);
 
   // Create dist directory for build output
-  await fs.ensureDir(path.join(vitepressDistDir, 'dist'));
+  //await fs.ensureDir(path.join(vitepressDistDir, 'dist'));
 
   return new Promise<void>((resolve, reject) => {
-    const npx = process.platform === 'win32' ? './node_modules/.bin/vitepress.cmd':'./node_modules/.bin/vitepress';//'npx.cmd' : 'npx';
+    const npx = process.platform === 'win32' ? 'npx.cmd' : 'npx';
     // Run VitePress build command with appropriate options
     // Note: we're passing specific outDir and base options to ensure correct paths
     const build = spawn(npx, [
-      //'vitepress',
+      'vitepress',
       'build',
-      markdownDir,
+      '.',//markdownDir,
       '--outDir', vitepressDistDir,
       '--base', '/' // Set the base URL to root
     ], {
-      stdio: 'pipe', // Add stdio option
+      stdio: 'inherit',//'pipe', // Add stdio option
       shell: true, // Use shell to ensure proper command execution
-      cwd: process.cwd(), // Run from current directory
+      cwd: markdownDir,//process.cwd(), // Run from current directory
       env: {
         ...process.env,
         NODE_OPTIONS: '--max-old-space-size=4096' // Increase Node memory limit for large builds
       }
     });
 
-    build.stdout.on('data', (data) => {
+   /* build.stdout.on('data', (data) => {
       console.log(`${data}`);
     });
 
     build.stderr.on('data', (data) => {
       console.error(`${data}`);
-    });
+    });*/
 
     build.on('close', (code) => {    // No need to clean up any temporary script file
 
@@ -311,5 +358,10 @@ async function buildVitepress(markdownDir: string, outputDir: string): Promise<v
         resolve();
       }
     });
+
+    build.on('error', (err) => {
+  console.error('Failed to start VitePress build process:', err);
+  reject(err);
+});
   });
 }
