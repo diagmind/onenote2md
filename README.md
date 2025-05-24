@@ -15,13 +15,7 @@ A versatile tool for converting DOCX files to HTML with configurable options.
 ### Global Installation
 
 ```bash
-npm install -g docx2html
-```
-
-### Local Installation
-
-```bash
-npm install docx2html
+npm install -g onenote2md
 ```
 
 ## Usage
@@ -61,20 +55,13 @@ This is especially useful for batch processing where you want to convert docx fi
 
 ```bash
 # Convert remote DOCX files
-docx2html -u "https://diagmindtw.com/rawdocx/serve-docx.php?file=" -b "https://diagmindtw.com/kcms0.php#edit" -s remote
+onenote2md -u "https://diagmindtw.com/rawdocx/serve-docx.php?file=" -b "https://diagmindtw.com/kcms0.php#edit" -s remote
 
 # ...
 
 node dist/cli.js -u "https://diagmindtw.com/rawdocx/serve-docx.php?file=" -b "./kcms0.php" -M
 
-# Convert local DOCX files with development server (還沒測試)
-docx2html -b "./config.json" -s local -o "./html-output" -w
-
-# Enable debug mode
-docx2html -b "./config.json" -s local -e
-
-# Download markdown files automatically with auto-stop when complete
-docx2html -b "./config.json" -o "./html-output" -M
+node dist/cli.js -u "https://diagmindtw.com/rawdocx/serve-docx.php?file=" -b "./kcms0.php" -M -v
 ```
 
 ## Configuration File
@@ -170,6 +157,11 @@ You can use a JSON configuration file to specify multiple settings. Here's an ex
 6. 其中目標url如果設定是remote的話，會自動在網址後面加上config的"輸入"那個陣列(含有base url)，不然docx要複製一份到輸出資料夾，檔名要改成config的"輸出"那個陣列(text).docx
 7. 如果有display none，給403頁面
 8. -w 被設定，在本地啟動開發服務器，可以預覽生成的HTML
+
+### vitepress 
+
+- +v
+- markdown `-M`
 
 ## Building and Publishing
 
