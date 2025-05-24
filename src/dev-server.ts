@@ -2,6 +2,8 @@ import { spawn, ChildProcess } from 'child_process';
 import * as path from 'path';
 import * as fs from 'fs-extra';
 import { watch } from 'fs';
+import { setupVitePress } from './vitepress-setup';
+
 
 /**
  * Start a development server to view the HTML output using pubhtmlhere
@@ -211,6 +213,7 @@ export async function startServer(outputDir: string, port: number = 48489): Prom
     if (serverProcess) {
       try {
         serverProcess.kill();
+        
       } catch (error) {
         console.error('Error stopping previous server:', error);
       }
@@ -260,7 +263,8 @@ export async function startServer(outputDir: string, port: number = 48489): Prom
           console.log(`Using fallback approach with Node.js`);
           
           if (serverProcess && !serverProcess.killed) {
-            try { serverProcess.kill(); } catch(e) { /* ignore */ }
+            try { serverProcess.kill();
+         } catch(e) { /* ignore */ }
           }
           
           serverProcess = spawn('node', [directIndexPath, '--port', port.toString()], {
@@ -371,6 +375,14 @@ export function stopServer(): void {
         const options = require(cliOptionsPath);
         if (options.autoMd) {
           console.log('Auto-Markdown mode active. Exiting process...');
+
+ if (options.vitepress) {
+        console.log('Setting up VitePress and building the site from markdown files...');
+        const outputPath = options.output || './output';
+        const markdownDir = path.join(outputPath, 'markdown');
+        await setupVitePress(markdownDir, outputPath);
+      }
+
           process.exit(0);
         }
       } catch (e) {

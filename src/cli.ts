@@ -14,7 +14,7 @@ const { version } = require('../package.json');
 const program = new Command();
 
 program
-  .name('docx2html')
+  .name('onenote2md')
   .description('Convert DOCX files to HTML with configurable options')
   .version(version)
   .option('-u, --url <url>', 'base URL to download docx file from (e.g., https://diagmindtw.com/rawdocx/)')
@@ -81,12 +81,12 @@ program
           console.log('Please run the command with --dev option to download markdown files.');
         }
       }      // Setup VitePress and build the site if the vitepress option is enabled
-      if (options.vitepress) {
+     /* if (options.vitepress) {
         console.log('Setting up VitePress and building the site from markdown files...');
         const outputPath = options.output || './output';
         const markdownDir = path.join(outputPath, 'markdown');
         await setupVitePress(markdownDir, outputPath);
-      }
+      }*/
     } catch (error) {
       console.error(`Error: ${error}`);
       process.exit(1);
@@ -94,7 +94,7 @@ program
   });
 
 // Add a separate command just for downloading markdown
-program  .command('download-markdown')
+/*program  .command('download-markdown')
   .description('Download markdown files from previously generated HTML pages')
   .option('-o, --output <path>', 'Output directory path with HTML files', './output')
   .option('-p, --port <number>', 'Port to use for local server', '48489')
@@ -131,6 +131,6 @@ program  .command('download-markdown')
       console.error(`Error downloading markdown: ${error}`);
       process.exit(1);
     }
-  });
+  });*/
 
 program.parse(process.argv);
