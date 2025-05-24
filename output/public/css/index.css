@@ -1,0 +1,253 @@
+.full-page-loader {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(255, 255, 255, 0.8);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999;
+}
+
+/* Add cursor pointer style for the landing page button */
+#button_back_to_landing_page {
+    cursor: pointer;
+}
+
+.dt-container {
+    background-color: #F3F3E8;
+    /*這個寬度從.docx來的 595.3*0.96*/
+    width: 571.488pt;
+    border-radius: 10px;
+    padding-top: 1vh;
+    padding-right: 1vw;
+    padding-bottom: 1vh;
+    padding-left: 1vw;
+    margin-top: 1vh;
+    /*margin-right: 1vw;*/
+    margin-bottom: 1vh;
+    /*margin-left: 1vw;*/
+    position: relative;
+    left: -120px;
+}
+
+colgroup {
+    display: none;
+}
+
+/* 讓標題可以水平滾動 */
+h1#thePageTitle {
+    max-width: 100%;
+    overflow-x: auto;
+    /* Hide scrollbar for Chrome, Safari and IE */
+    -ms-overflow-style: none;
+    /* Internet Explorer 10+ */
+    scrollbar-width: none;
+    /* Firefox */
+}
+
+h1#thePageTitle::-webkit-scrollbar {
+    display: none;
+    /* Safari and Chrome */
+}
+
+/*選單收合功能*/
+/* Menu Wrapper */
+.menu-wrapper {
+    position: fixed;
+    top: 0;
+    height: 100%;
+    width: auto;
+    z-index: 100;
+    background: none;
+    border: none;
+    overflow: visible;
+}
+
+#leftMenuWrapper {
+    transform: translateX(0);
+    transition: transform 0.3s ease;
+}
+
+#rightMenuWrapper {
+    transform: translateX(0);
+    transition: transform 0.3s ease;
+}
+
+/* 1. Restore Semantic UI Menu Item Styles
+       2. Enable vertically scrolling */
+#leftMenu,
+#rightMenu {
+    position: absolute;
+    overflow-y: auto;
+    max-height: 100%;
+    transition: transform 0.3s ease;
+}
+
+#leftMenu .item,
+#rightMenu .item {
+    font-weight: 400;
+    color: #333;
+    border-bottom: 1px solid #ddd;
+}
+
+#leftMenu .item {
+    padding: 1em 14px;
+    font-size: 14px;
+}
+
+#rightMenu .item {
+    padding: .8em 12px;
+    font-size: 12px;
+}
+
+#leftMenu .item:hover,
+#rightMenu .item:hover {
+    background-color: #f9f9f9;
+    color: #000;
+}
+
+#leftMenuToggle,
+#rightMenuToggle {
+    background-color: #fff;
+    border: 1px solid #ddd;
+    width: 16px;
+    height: 30px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+}
+
+#leftMenuToggle {
+    right: -16px;
+    border-top-right-radius: 20%;
+    border-bottom-right-radius: 20%;
+}
+
+#rightMenuToggle {
+    left: -16px;
+    border-top-left-radius: 20%;
+    border-bottom-left-radius: 20%;
+}
+
+#leftMenuToggle i,
+#rightMenuToggle i {
+    color: #333;
+    font-size: 16px;
+    top: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin: 0;
+}
+
+#leftMenuToggle:hover,
+#rightMenuToggle:hover {
+    background-color: #e0e0e0;
+    cursor: pointer;
+}
+
+/* 
+    區域3 字體 區域起始
+    <weight>: Use a value from 100 to 900
+       <uniquifier>: Use a unique and descriptive class name*/
+.noto-sans-300 {
+    font-family: "Noto Sans", sans-serif;
+    font-optical-sizing: auto;
+    font-weight: 300;
+    font-style: normal;
+    font-variation-settings:
+        "wdth" 100;
+}
+
+/* RWD: 根據螢幕viewport大小決定layout，一共分成四個範圍
+        範圍1: > 1200px (預設layout)
+        範圍2: < 1200px
+        範圍3: < 850px
+        範圍4: < 600px
+        注意: 這些範圍的作用是疊加的；舉例來說，當螢幕寬度小於850px時，會依照 範圍1 > 範圍2 > 範圍3 的順序來套用CSS樣式 */
+
+/* 範圍2: < 1200px
+        在此範圍內，右選單會自動隱藏起來(可拉開)，筆記分頁標題與內文的字體大小會變小 */
+@media (max-width: 1200px) {
+
+    /* 右選單預設收攏 */
+    #rightMenuWrapper {
+        transform: translateX(100%);
+    }
+
+    /* 字體大小調整 */
+    h1#thePageTitle {
+        font-size: 1.8rem;
+    }
+
+    .docx article div.ui.segment.level-2 p span {
+        font-size: 14pt !important;
+    }
+
+    .docx article div.ui.segment.level-3 p span {
+        font-size: 12pt !important;
+    }
+}
+
+/* 範圍3: < 850px
+        在此範圍內，左選單會自動隱藏起來(可拉開)，筆記分頁標題與內文的字體大小會變小 */
+@media (max-width: 850px) {
+
+    /* 調整內文整體layout至合適大小 */
+    #container {
+        display: flex;
+        justify-content: center;
+        align-items: flex-start;
+        margin: 0 auto;
+        padding: 1rem;
+        width: 100%;
+        box-sizing: border-box;
+        overflow-x: auto;
+    }
+
+    /* 允許內文水平滾動 */
+    .docx {
+        width: auto;
+        max-width: none;
+        margin: 0 auto;
+        overflow-x: auto;
+        display: block;
+        box-sizing: border-box;
+        white-space: nowrap;
+    }
+
+    /* 左選單預設收攏 */
+    #leftMenuWrapper {
+        transform: translateX(-100%);
+    }
+
+    /* 字體大小調整 */
+    h1#thePageTitle {
+        font-size: 1.5rem;
+    }
+
+    .docx article div.ui.segment.level-2 p span {
+        font-size: 12pt !important;
+    }
+
+    .docx article div.ui.segment.level-3 p span {
+        font-size: 10pt !important;
+    }
+}
+
+/* 範圍4: < 600px
+        在此範圍內，筆記分頁標題的字體大小會變小 */
+@media (max-width: 600px) {
+
+    /* 字體大小調整 */
+    h1#thePageTitle {
+        font-size: 1.2rem;
+    }
+}

@@ -63,6 +63,10 @@ This is especially useful for batch processing where you want to convert docx fi
 # Convert remote DOCX files
 docx2html -u "https://diagmindtw.com/rawdocx/serve-docx.php?file=" -b "https://diagmindtw.com/kcms0.php#edit" -s remote
 
+# ...
+
+node dist/cli.js -u "https://diagmindtw.com/rawdocx/serve-docx.php?file=" -b "./kcms0.php" -M
+
 # Convert local DOCX files with development server (還沒測試)
 docx2html -b "./config.json" -s local -o "./html-output" -w
 
