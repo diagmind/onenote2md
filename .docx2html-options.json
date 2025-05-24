@@ -3,8 +3,9 @@
   "port": "48489",
   "wait": "5000",
   "url": "https://diagmindtw.com/rawdocx/serve-docx.php?file=",
-  "configUrl": "https://raw.githubusercontent.com/diagmind/onenote2md/refs/heads/main/kcms0.php",
+  "configUrl": "./kcms0.php",
   "autoMd": true,
+  "vitepress": true,
   "source": "local",
   "markdown": true,
   "dev": true

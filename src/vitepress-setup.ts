@@ -19,7 +19,9 @@ export async function setupVitePress(markdownDir: string, outputDir: string): Pr
     console.log(`Created VitePress directory: ${vitepressDir}`);
 
     // Copy config from config_example.mts
-    const configTemplatePath = path.join(process.cwd(), 'config_example.mts');
+    const static_P_Dir = path.join(__dirname, 'public');
+    const configTemplatePath = path.join(static_P_Dir, 'config_example.mts');//process.cwd(), 'config_example.mts');
+    //const configTemplatePath = path.join(process.cwd(), 'config_example.mts');
     const configTargetPath = path.join(vitepressDir, 'config.mts');
 
     await fs.copy(configTemplatePath, configTargetPath);
@@ -273,11 +275,11 @@ async function buildVitepress(markdownDir: string, outputDir: string): Promise<v
   await fs.ensureDir(path.join(vitepressDistDir, 'dist'));
 
   return new Promise<void>((resolve, reject) => {
-    const npx = process.platform === 'win32' ? 'npx.cmd' : 'npx';
+    const npx = process.platform === 'win32' ? './node_modules/.bin/vitepress.cmd':'./node_modules/.bin/vitepress';//'npx.cmd' : 'npx';
     // Run VitePress build command with appropriate options
     // Note: we're passing specific outDir and base options to ensure correct paths
     const build = spawn(npx, [
-      'vitepress',
+      //'vitepress',
       'build',
       markdownDir,
       '--outDir', vitepressDistDir,

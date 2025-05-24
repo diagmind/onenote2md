@@ -21,3 +21,4 @@ async function copyPublicDir(a:string) {
 // Execute the function
 copyPublicDir("public");
 copyPublicDir("static");
+console.log("*************************************************Copy public and static directories completed successfully.");
