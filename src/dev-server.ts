@@ -147,13 +147,17 @@ export function startDevServer(outputDir: string): void {
     }
   };
 
-  // Watch for changes in the master.html template
-  watch(masterHtmlPath, async (eventType, filename) => {
-    if (eventType === 'change') {
-      console.log(`File ${filename} has been changed`);
-      await regenerateHtmlFiles();
-    }
-  });
+  // Watch for changes in the master.html template, but only if it exists
+  if (fs.existsSync(masterHtmlPath)) {
+    watch(masterHtmlPath, async (eventType, filename) => {
+      if (eventType === 'change') {
+        console.log(`File ${filename} has been changed`);
+        await regenerateHtmlFiles();
+      }
+    });
+  } else {
+    console.log(`Master HTML template not found at ${masterHtmlPath}, file watching skipped.`);
+  }
 
   // Start the server
   startServer();
