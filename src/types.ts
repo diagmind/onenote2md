@@ -20,4 +20,7 @@ export interface CLIOptions {
   output?: string;
   dev?: boolean;
   debug?: boolean;
+  markdown?: boolean;
+  port?: string;
+  wait?: string;
 }

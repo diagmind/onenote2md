@@ -6,6 +6,11 @@ import { createHtmlFiles } from './html-generator';
 import { startDevServer } from './dev-server';
 import { DebugLogger } from './debug';
 import { CLIOptions } from './types';
+import { downloadMarkdownFromHtmlPages } from './markdown-downloader';
+
+// Export the markdown downloader function
+export { downloadMarkdownFromHtmlPages } from './markdown-downloader';
+export { startServer, stopServer } from './dev-server';
 
 /**
  * Main function that processes DOCX files and converts them to HTML

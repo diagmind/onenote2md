@@ -1,0 +1,10 @@
+{
+  "output": "C:\\Users\\ai\\Documents\\andy\\code\\onenote2md\\output",
+  "port": "48489",
+  "wait": "5000",
+  "url": "https://diagmindtw.com/rawdocx/serve-docx.php?file=",
+  "configUrl": "https://diagmindtw.com/kcms0.php#edit",
+  "source": "remote",
+  "markdown": true,
+  "dev": true
+}

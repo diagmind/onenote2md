@@ -181,3 +181,170 @@ function openBrowser(url: string): void {
   
   spawn(command, args, { stdio: 'ignore' });
 }
+
+// Store the server process
+let serverProcess: ChildProcess | null = null;
+
+/**
+ * Start a server programmatically for a specific directory
+ * @param outputDir The directory to serve
+ * @param port The port to use (default: 48489)
+ * @returns A promise that resolves when the server is ready
+ */
+export async function startServer(outputDir: string, port: number = 48489): Promise<void> {
+  return new Promise((resolve, reject) => {
+    console.log(`Starting server for directory: ${outputDir} on port ${port}`);
+    
+    // Find the pubhtmlhere executable
+    let pubhtmlCmd: string;
+    const localPubhtmlPath = path.join(process.cwd(), 'node_modules', '.bin', 'pubhtmlhere');
+    
+    // Initial detection of local vs global
+    if (fs.existsSync(localPubhtmlPath) || (process.platform === 'win32' && fs.existsSync(localPubhtmlPath + '.cmd'))) {
+      pubhtmlCmd = localPubhtmlPath;
+    } else {
+      // Use global installation
+      pubhtmlCmd = 'pubhtml';
+    }
+    
+    // Kill previous server process if it exists
+    if (serverProcess) {
+      try {
+        serverProcess.kill();
+      } catch (error) {
+        console.error('Error stopping previous server:', error);
+      }
+    }
+
+    try {
+      console.log(`Starting pubhtmlhere with command: ${pubhtmlCmd} on port ${port}`);
+      
+      // Execute pubhtmlhere in the outputDir
+      serverProcess = spawn(pubhtmlCmd, ['--port', port.toString()], {
+        cwd: outputDir,
+        stdio: 'pipe', // Capture output to determine when server is ready
+        shell: true
+      });
+
+      let errorOutput = '';
+      let stdoutOutput = '';
+      
+      if (serverProcess.stderr) {
+        serverProcess.stderr.on('data', (data) => {
+          errorOutput += data.toString();
+          console.error(`Server stderr: ${data.toString()}`);
+        });
+      }
+      
+      if (serverProcess.stdout) {
+        serverProcess.stdout.on('data', (data) => {
+          const output = data.toString();
+          stdoutOutput += output;
+          console.log(output);
+          
+          // Detect when server is ready
+          if (output.includes('Server running at') || output.includes('Server started')) {
+            console.log(`Server started on port ${port}`);
+            resolve();
+          }
+        });
+      }
+      
+      serverProcess.on('error', (error) => {
+        console.error(`Failed to start server: ${error.message}`);
+        
+        // Try fallback approach
+        const directIndexPath = path.join(process.cwd(), 'node_modules', 'pubhtmlhere', 'index.js');
+        
+        if (fs.existsSync(directIndexPath)) {
+          console.log(`Using fallback approach with Node.js`);
+          
+          if (serverProcess && !serverProcess.killed) {
+            try { serverProcess.kill(); } catch(e) { /* ignore */ }
+          }
+          
+          serverProcess = spawn('node', [directIndexPath, '--port', port.toString()], {
+            cwd: outputDir,
+            stdio: 'pipe',
+            shell: false
+          });
+          
+          if (serverProcess.stderr) {
+            serverProcess.stderr.on('data', (data) => {
+              console.error(`Fallback server stderr: ${data.toString()}`);
+            });
+          }
+          
+          if (serverProcess.stdout) {
+            serverProcess.stdout.on('data', (data) => {
+              const output = data.toString();
+              console.log(output);
+              
+              if (output.includes('Server running at') || output.includes('Server started')) {
+                console.log(`Fallback server started on port ${port}`);
+                resolve();
+              }
+            });
+          }
+          
+          serverProcess.on('error', (fallbackError) => {
+            console.error(`Fallback server failed: ${fallbackError.message}`);
+            reject(fallbackError);
+          });
+          
+          serverProcess.on('close', (code) => {
+            if (code !== 0 && code !== null) {
+              reject(new Error(`Fallback server process exited with code ${code}`));
+            }
+          });
+          
+        } else {
+          reject(new Error(`Failed to start server and fallback not available`));
+        }
+      });
+      
+      serverProcess.on('close', (code) => {
+        if (code !== 0 && code !== null) {
+          reject(new Error(`Server process exited with code ${code}`));
+        }
+      });
+      
+      // Set a timeout to resolve anyway in case we miss the "server started" message
+      setTimeout(() => {
+        if (stdoutOutput || errorOutput) {
+          console.log('Timeout reached but server seems to have started. Proceeding...');
+          resolve();
+        } else {
+          reject(new Error('Server did not start within the timeout period'));
+        }
+      }, 5000);
+      
+    } catch (error) {
+      console.error(`Error starting server: ${error}`);
+      reject(error);
+    }
+  });
+}
+
+/**
+ * Stop the server if it's running
+ */
+export function stopServer(): void {    if (serverProcess) {
+    console.log('Stopping server...');
+    try {
+      if (process.platform === 'win32' && serverProcess.pid) {
+        // On Windows, use taskkill to forcefully terminate child processes
+        spawn('taskkill', ['/pid', serverProcess.pid.toString(), '/f', '/t'], { 
+          shell: true,
+          stdio: 'ignore'
+        });
+      } else {
+        // On Unix systems
+        serverProcess.kill('SIGTERM');
+      }
+    } catch (error) {
+      console.error(`Error stopping server: ${error}`);
+    }
+    serverProcess = null;
+  }
+}

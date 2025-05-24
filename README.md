@@ -37,6 +37,9 @@ Options:
   -o, --output <path>         Output directory path (default:./output)
   -w, --dev                   Start server at http://127.0.0.1:48489 to view the HTML output
   -e, --debug                 Enable debug mode to log each processing stage
+  -m, --markdown              Download markdown files from generated HTML pages (requires --dev)
+  -p, --port <number>         Port for the dev server (default: 48489)
+  -t, --wait <ms>             Wait time in milliseconds for markdown download process (default: 5000)
   -h, --help                  display help for command
 ```
 
