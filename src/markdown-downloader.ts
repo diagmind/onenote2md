@@ -98,21 +98,40 @@ export async function downloadMarkdownFromHtmlPages(
           return loader && loader.style.display === 'none';
         }, { timeout: 60000 });
 
-        // Extract section information from the right sidebar
-        const sections = await page.evaluate(() => {
-          const sectionElements = document.querySelectorAll('.right-menu .item');
-          return Array.from(sectionElements).map((el, index) => {
-            const id = el.getAttribute('data-id') || String(index + 1);
-            const title = el.textContent?.trim() || `Section ${index + 1}`;
-            return { id, title };
-          });
+        // Extract section information from the right menu
+        const sectionInfo = await page.evaluate(() => {
+          // Look for the right menu elements
+          const rightMenuItems = document.querySelectorAll('#rightMenu .item');
+          if (rightMenuItems && rightMenuItems.length > 0) {
+            // If right menu items exist, extract them
+            return Array.from(rightMenuItems).map((el, index) => {
+              const href = el.getAttribute('href') || '';
+              const id = href.split('#')[1] || (index + 1).toString();
+              const title = el.textContent?.trim() || `Section ${index + 1}`;
+              return { id, title };
+            });
+          } else {
+            // If no right menu is found, try to determine the number of sections from the JavaScript
+            const hashIDX = document.body.innerHTML.match(/var\s+hashIDX\s*=\s*(\d+);/);
+            const maxSection = hashIDX ? parseInt(hashIDX[1], 10) : 0;
+            
+            // Create section objects based on the max number
+            const sections = [];
+            for (let i = 1; i <= maxSection; i++) {
+              sections.push({
+                id: i.toString(),
+                title: `Section ${i}`
+              });
+            }
+            return sections;
+          }
         });
         
-        if (sections.length === 0) {
+        if (sectionInfo.length === 0) {
           console.log(`No sections found for chapter ${chapter.name}`);
         } else {
-          console.log(`Found ${sections.length} sections for chapter ${chapter.name}`);
-          chapter.sections = sections;
+          console.log(`Found ${sectionInfo.length} sections for chapter ${chapter.name}`);
+          chapter.sections = sectionInfo;
         }
       } catch (error) {
         console.error(`Error scanning chapter ${chapter.name}: ${error}`);
@@ -139,7 +158,7 @@ export async function downloadMarkdownFromHtmlPages(
         const url = `${baseUrl}/${chapter.path}/index.html#${section.id}`;
         
         // Generate filename
-        const filename = `${chapter.name}-${section.id}`;
+        const filename = `${chapter.name}-${section.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}`;
         
         await downloadMarkdownFromPage(page, url, downloadDir, filename, waitTimeMs);
       }
@@ -171,11 +190,11 @@ async function downloadMarkdownFromPage(
   waitTimeMs: number
 ): Promise<void> {
   try {
-    // Navigate to the page
+    // Navigate to the page with full page reload
     console.log(`Navigating to ${url}...`);
     await page.goto(url, { waitUntil: 'networkidle2', timeout: 60000 });
     
-    // Wait for the page to reload and load completely
+    // Wait for the page to fully load
     console.log('Waiting for page to fully load...');
     
     // Wait for the container to be visible
@@ -185,7 +204,38 @@ async function downloadMarkdownFromPage(
     await page.waitForFunction(() => {
       const loader = document.getElementById('loader');
       return loader && loader.style.display === 'none';
-    }, { timeout: 60000 });
+    }, { timeout: 60000 });    // Check if we need to reload for hash change to take effect
+    const needsReload = await page.evaluate(() => {
+      // Check if the hash exists in the URL and if currentStage3index matches it
+      const hash = window.location.hash;
+      if (hash && hash.startsWith('#')) {
+        const hashId = parseInt(hash.substring(1));
+        // Access currentStage3index as a global variable in the page context
+        return hashId !== (window as any).currentStage3index;
+      }
+      return false;
+    });
+    
+    if (needsReload) {
+      console.log('Reloading page to apply hash change...');
+      await page.reload({ waitUntil: 'networkidle2', timeout: 60000 });
+      
+      // Wait for the container to be visible again
+      await page.waitForSelector('#container', { visible: true, timeout: 60000 });
+      
+      // Wait for the "Loading" to disappear again
+      await page.waitForFunction(() => {
+        const loader = document.getElementById('loader');
+        return loader && loader.style.display === 'none';
+      }, { timeout: 60000 });
+    }
+
+    // Verify the page has loaded the correct section
+    await page.waitForFunction(() => {
+      return document.getElementById('thePageTitle') !== null;
+    }, { timeout: 30000 }).catch(() => {
+      console.log('Warning: Page title element not found.');
+    });
 
     // Wait for the dropdown to be ready
     console.log('Waiting for dropdown menu to be ready...');
@@ -198,6 +248,12 @@ async function downloadMarkdownFromPage(
     // Wait for dropdown menu to open
     console.log('Waiting for markdown download option to appear...');
     await page.waitForSelector('.menu .item#DEVdownloadMarkdown', { visible: true, timeout: 15000 });
+    
+    // Get current page title to use in filename
+    const pageTitle = await page.evaluate(() => {
+      const titleElement = document.getElementById('thePageTitle');
+      return titleElement ? titleElement.textContent : '';
+    });
     
     // Click on the download markdown button
     console.log('Clicking on "Download Markdown" option...');
@@ -224,7 +280,13 @@ async function downloadMarkdownFromPage(
       
       // Only rename markdown files
       if (latestFile.endsWith('.md')) {
-        const newFileName = `${filenamePrefix}.md`;
+        // Use page title if available, otherwise use the provided prefix
+        let newFileName = filenamePrefix;
+        if (pageTitle) {
+          newFileName = `${filenamePrefix}-${pageTitle.replace(/[^a-z0-9]/gi, '_').toLowerCase()}`;
+        }
+        newFileName += '.md';
+        
         const oldPath = path.join(downloadDir, latestFile);
         const newPath = path.join(downloadDir, newFileName);
         
