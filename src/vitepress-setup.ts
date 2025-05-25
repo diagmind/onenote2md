@@ -8,6 +8,9 @@ export async function setupVitePress(markdownDir: string, outputDir: string): Pr
   console.log('\n=== Starting VitePress setup ===');
 
   try {
+    // Rename files with square brackets first
+    await renameFilesWithSquareBrackets(markdownDir);
+
     const vitepressDir = path.join(markdownDir, '.vitepress');
     await fs.ensureDir(vitepressDir);
     console.log(`Created VitePress directory: ${vitepressDir}`);
@@ -21,15 +24,28 @@ export async function setupVitePress(markdownDir: string, outputDir: string): Pr
     const sidebar = await generateSidebar(markdownDir);
     await updateVitepressConfig(configTargetPath, sidebar);
     await createDefaultIndexFile(markdownDir, sidebar);
-    await installVitePress(markdownDir);
-    await buildVitepress(markdownDir, outputDir);
-
-
 
     console.log(`\n=== VitePress setup completed. Output in: ${outputDir}/vitepress_dist ===\n`);
   } catch (error) {
     console.error('Error setting up VitePress:', error);
     throw error;
+  }
+}
+
+async function renameFilesWithSquareBrackets(markdownDir: string): Promise<void> {
+  console.log('Renaming files with square brackets...');
+  const files = await fs.readdir(markdownDir);
+  const markdownFiles = files.filter(file => file.endsWith('.md') && (file.includes('[') || file.includes(']')));
+
+  for (const file of markdownFiles) {
+    const oldPath = path.join(markdownDir, file);
+    const newFilename = file.replace(/\[/g, '【').replace(/\]/g, '】');
+    const newPath = path.join(markdownDir, newFilename);
+    
+    if (oldPath !== newPath) {
+      await fs.move(oldPath, newPath);
+      console.log(`Renamed: ${file} -> ${newFilename}`);
+    }
   }
 }
 
@@ -67,7 +83,7 @@ async function generateSidebar(markdownDir: string): Promise<ConfigSection[]> {
 
     const items = files.map(({ file, title }) => ({
       text: title,
-      link: `/${file}`
+      link: `/${file.replace(/\[/g, '【').replace(/\]/g, '】')}`
     }));
 
     let chapterTitle = chapter;
@@ -151,61 +167,4 @@ export default defineConfig({
   console.log('VitePress config updated.');
 }
 
-export async function installVitePress(workDir: string): Promise<void> {
-  console.log('Installing VitePress...');
-
-  return new Promise((resolve, reject) => {
-    const staticPDir = path.join(__dirname, 'public');
-    const worker = new Worker(path.resolve(staticPDir, './vitepressWorker.js'), {
-      workerData: {
-        command: 'npm add -D vitepress',
-        cwd: workDir,
-        env: process.env
-      }
-    });
-
-    worker.on('message', (msg) => console.log(msg));
-    worker.on('error', reject);
-    worker.on('exit', (code) => {
-      if (code !== 0) {
-        reject(new Error(`VitePress install worker stopped with exit code ${code}`));
-      } else {
-        console.log('VitePress installed.');
-        resolve();
-      }
-    });
-  });
-}
-
-export async function buildVitepress(markdownDir: string, outputDir: string): Promise<void> {
-  console.log('Building VitePress site...');
-
-  const vitepressDistDir = path.join(outputDir, 'vitepress_dist');
-  await fs.ensureDir(vitepressDistDir);
-
-  return new Promise((resolve, reject) => {
-    const staticPDir = path.join(__dirname, 'public');
-    const worker = new Worker(path.resolve(staticPDir, './vitepressWorker.js'), {
-      workerData: {
-        command: `npx vitepress build . --outDir "${vitepressDistDir}" --base /`,
-        cwd: markdownDir,
-        env: {
-          ...process.env,
-          NODE_OPTIONS: '--max-old-space-size=4096'
-        }
-      }
-    });
-
-    worker.on('message', (msg) => console.log(msg));
-    worker.on('error', reject);
-    worker.on('exit', (code) => {
-      if (code !== 0) {
-        reject(new Error(`VitePress build worker stopped with exit code ${code}`));
-      } else {
-        console.log('VitePress site built.');
-        resolve();
-      }
-    });
-  });
-}
 

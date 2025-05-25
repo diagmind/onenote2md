@@ -1,6 +1,6 @@
 {
   "name": "onenote2md",
-  "version": "1.2.8",
+  "version": "1.2.11",
   "description": "Convert DOCX files to HTML with configurable options",
   "main": "dist/index.js",
   "bin": {
@@ -33,8 +33,5 @@
     "puppeteer": "^22.11.0",
     "ts-node": "^10.9.2",
     "typescript": "^5.8.3"
-  },
-  "devDependencies": {
-    "vitepress": "^1.6.3"
   }
 }
