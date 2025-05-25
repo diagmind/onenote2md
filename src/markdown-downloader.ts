@@ -259,14 +259,35 @@ async function downloadMarkdownFromPage(
     // Wait for the page to fully load
     console.log('Waiting for page to fully load...');
     
-    // Wait for the container to be visible
-    await page.waitForSelector('#container', { visible: true, timeout: 60000 });
+    // Wait for the container to be visible with retry mechanism
+    let retryCount = 0;
+    const maxRetries = 3;
+    let containerLoaded = false;
+    
+    while (!containerLoaded && retryCount < maxRetries) {
+      try {
+        // Wait for the container to be visible
+        await page.waitForSelector('#container', { visible: true, timeout: 60000 });
+        containerLoaded = true;
+      } catch (error) {
+        retryCount++;
+        console.log(`Container not visible after 60 seconds. Retry attempt ${retryCount}/${maxRetries}`);
+        if (retryCount < maxRetries) {
+          console.log('Reloading the page...');
+          await page.reload({ waitUntil: 'networkidle2', timeout: 60000 });
+        } else {
+          throw new Error(`Failed to load container after ${maxRetries} attempts: ${error}`);
+        }
+      }
+    }
     
     // Wait for the "Loading" to disappear
     await page.waitForFunction(() => {
       const loader = document.getElementById('loader');
       return loader && loader.style.display === 'none';
-    }, { timeout: 60000 });    // Check if we need to reload for hash change to take effect
+    }, { timeout: 60000 });
+    
+    // Check if we need to reload for hash change to take effect
     const needsReload = await page.evaluate(() => {
       // Check if the hash exists in the URL and if currentStage3index matches it
       const hash = window.location.hash;

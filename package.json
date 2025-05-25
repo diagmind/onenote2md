@@ -1,6 +1,6 @@
 {
   "name": "onenote2md",
-  "version": "1.2.1",
+  "version": "1.2.11",
   "description": "Convert DOCX files to HTML with configurable options",
   "main": "dist/index.js",
   "bin": {
@@ -20,20 +20,18 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@shikijs/core": "^3.4.2",
     "@types/fs-extra": "^11.0.4",
     "@types/node": "^22.15.17",
     "@types/puppeteer": "^7.0.4",
     "axios": "^1.9.0",
     "commander": "^13.1.0",
+    "execa": "*",
     "fs-extra": "^11.3.0",
     "mammoth": "^1.9.0",
-    "pubhtmlhere": "^2.2.0",
+    "pubhtmlhere": "^2.2.8",
     "puppeteer": "^22.11.0",
     "ts-node": "^10.9.2",
     "typescript": "^5.8.3"
-  },
-  "devDependencies": {
-    "@shikijs/core": "^3.4.2",
-    "vitepress": "^1.6.3"
   }
 }
