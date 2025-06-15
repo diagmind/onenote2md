@@ -28,10 +28,14 @@
     "commander": "^13.1.0",
     "execa": "*",
     "fs-extra": "^11.3.0",
+    "jsdom": "^23.2.0",
     "mammoth": "^1.9.0",
     "pubhtmlhere": "^2.2.8",
     "puppeteer": "^22.11.0",
     "ts-node": "^10.9.2",
     "typescript": "^5.8.3"
+  },
+  "devDependencies": {
+    "@types/jsdom": "^21.1.7"
   }
 }

@@ -1,6 +1,7 @@
 import fs from 'fs-extra';
 import path from 'path';
 import puppeteer from 'puppeteer';
+import { JSDOM } from 'jsdom';
 
 /**
  * Interface for storing chapter information
@@ -387,10 +388,47 @@ async function downloadMarkdownFromPage(
         
         const oldPath = path.join(downloadDir, latestFile);
         const newPath = path.join(downloadDir, newFileName);
-        
+
         await fs.rename(oldPath, newPath);
         console.log(`Renamed downloaded file to: ${newFileName}`);
-        
+
+        // Download table array using the built-in button
+        console.log('Preparing to download table array...');
+
+        // Re-open dropdown in case it closed
+        await page.click('.ui.dropdown.item');
+        await page.waitForSelector('.menu .item#domDownloadTableArray', { visible: true, timeout: 15000 });
+        await page.click('.menu .item#domDownloadTableArray');
+
+        console.log(`Waiting ${waitTimeMs}ms for table download to complete...`);
+        await new Promise(resolve => setTimeout(resolve, waitTimeMs));
+
+        // Find downloaded table array file
+        const filesAfter = await fs.readdir(downloadDir);
+        filesAfter.sort((a,b) => fs.statSync(path.join(downloadDir,b)).mtimeMs - fs.statSync(path.join(downloadDir,a)).mtimeMs);
+        const latestTable = filesAfter.find(f => f.endsWith('.json'));
+        let tablePath = '';
+        if (latestTable) {
+          const tableNewName = newFileName.replace(/\.md$/, '-table.json');
+          const tableOldPath = path.join(downloadDir, latestTable);
+          tablePath = path.join(downloadDir, tableNewName);
+          await fs.rename(tableOldPath, tablePath);
+          console.log(`Renamed downloaded table array to: ${tableNewName}`);
+        }
+
+        // Gather context around tables for insertion
+        const tableContext = await page.evaluate(() => {
+          return Array.from(document.querySelectorAll('table')).map(t => {
+            const before = t.previousElementSibling ? t.previousElementSibling.textContent?.trim().slice(-30) || '' : '';
+            const after = t.nextElementSibling ? t.nextElementSibling.textContent?.trim().slice(0,30) || '' : '';
+            return { before, after };
+          });
+        });
+
+        if (tablePath) {
+          await insertTablesIntoMarkdown(newPath, tablePath, tableContext);
+        }
+
         // Return true to indicate successful download
         console.log(`Successfully downloaded markdown from: ${url}`);
         return true;
@@ -405,5 +443,55 @@ async function downloadMarkdownFromPage(
     console.error(`Error processing ${url}: ${error}`);
     console.log('Continuing with next page...');
     return false; // Return failure status
+  }
+}
+
+/** Convert a table's HTML string to Markdown table */
+function tableHtmlToMarkdown(html: string): string {
+  const dom = new JSDOM(`<table>${html}</table>`);
+  const document = dom.window.document;
+  const rows = Array.from(document.querySelectorAll('tr')) as HTMLElement[];
+  let md = '';
+  rows.forEach((row: HTMLElement, rowIndex) => {
+    const cells = Array.from(row.querySelectorAll('th,td')) as HTMLElement[];
+    const texts = cells.map(c => c.textContent?.trim() || '');
+    if (rowIndex === 0) {
+      md += `| ${texts.join(' | ')} |\n`;
+      md += `| ${cells.map(() => '---').join(' | ')} |\n`;
+    } else {
+      md += `| ${texts.join(' | ')} |\n`;
+    }
+  });
+  return md;
+}
+
+/** Insert Markdown tables into the specified markdown file */
+async function insertTablesIntoMarkdown(mdPath: string, tableJsonPath: string, context: {before: string, after: string}[]): Promise<void> {
+  try {
+    const mdContent = await fs.readFile(mdPath, 'utf-8');
+    const tableArray: string[] = await fs.readJson(tableJsonPath);
+    const tablesMd = tableArray.map(html => tableHtmlToMarkdown(html));
+    let updated = mdContent;
+    tablesMd.forEach((table, idx) => {
+      const ctx = context[idx] || { before: '', after: '' };
+      let pos = -1;
+      if (ctx.before) {
+        pos = updated.indexOf(ctx.before.trim());
+        if (pos !== -1) {
+          pos += ctx.before.trim().length;
+        }
+      }
+      if (pos === -1 && ctx.after) {
+        pos = updated.indexOf(ctx.after.trim());
+      }
+      if (pos === -1) {
+        updated += `\n\n${table}\n`;
+      } else {
+        updated = updated.slice(0, pos) + `\n\n${table}\n` + updated.slice(pos);
+      }
+    });
+    await fs.writeFile(mdPath, updated, 'utf-8');
+  } catch (err) {
+    console.error(`Failed to insert tables into ${mdPath}: ${err}`);
   }
 }
