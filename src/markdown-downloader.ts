@@ -1,6 +1,29 @@
 import fs from 'fs-extra';
 import path from 'path';
 import puppeteer from 'puppeteer';
+import cheerio from 'cheerio';
+
+function htmlTableToMarkdown(html: string): string {
+  const $ = cheerio.load(html);
+  const rows = $('tr');
+  const table: string[][] = [];
+  rows.each((i, row) => {
+    const cells = $(row).find('th, td');
+    const rowData: string[] = [];
+    cells.each((_, cell) => {
+      rowData.push($(cell).text().trim().replace(/\n/g, ' '));
+    });
+    table.push(rowData);
+  });
+  if (table.length === 0) return '';
+  const header = table[0];
+  let md = '| ' + header.join(' | ') + ' |\n';
+  md += '| ' + header.map(() => '---').join(' | ') + ' |\n';
+  for (let i = 1; i < table.length; i++) {
+    md += '| ' + table[i].join(' | ') + ' |\n';
+  }
+  return md;
+}
 
 /**
  * Interface for storing chapter information
@@ -390,8 +413,25 @@ async function downloadMarkdownFromPage(
         
         await fs.rename(oldPath, newPath);
         console.log(`Renamed downloaded file to: ${newFileName}`);
-        
-        // Return true to indicate successful download
+
+        const tableArray: string[] = await page.evaluate(() => {
+          return (window as any).tableArray || [];
+        });
+
+        if (tableArray.length > 0) {
+          let mdContent = await fs.readFile(newPath, 'utf-8');
+          for (const html of tableArray) {
+            const mdTable = htmlTableToMarkdown(html);
+            const regex = /<table[\s\S]*?<\/table>/i;
+            if (regex.test(mdContent)) {
+              mdContent = mdContent.replace(regex, mdTable);
+            } else {
+              mdContent += `\n\n${mdTable}\n`;
+            }
+          }
+          await fs.writeFile(newPath, mdContent);
+        }
+
         console.log(`Successfully downloaded markdown from: ${url}`);
         return true;
       }
