@@ -1,29 +1,37 @@
 import fs from 'fs-extra';
 import path from 'path';
 import puppeteer from 'puppeteer';
-import cheerio from 'cheerio';
 
+/**
+ * Convert a simple HTML table string to Markdown.
+ * This implementation avoids external libraries such as cheerio by using
+ * regular expressions to parse table rows and cells.
+ */
 function htmlTableToMarkdown(html: string): string {
-  const $ = cheerio.load(html);
-  const rows = $('tr');
+  const rows = Array.from(html.matchAll(/<tr[^>]*>(.*?)<\/tr>/gis));
   const table: string[][] = [];
-  rows.each((i, row) => {
-    const cells = $(row).find('th, td');
-    const rowData: string[] = [];
-    cells.each((_, cell) => {
-      rowData.push($(cell).text().trim().replace(/\n/g, ' '));
-    });
+
+  for (const row of rows) {
+    const cells = Array.from(row[1].matchAll(/<(?:td|th)[^>]*>(.*?)<\/(?:td|th)>/gis));
+    const rowData = cells.map(cell => cell[1]
+      .replace(/<[^>]+>/g, '') // remove inner HTML tags
+      .trim()
+      .replace(/\n/g, ' '));
     table.push(rowData);
-  });
+  }
+
   if (table.length === 0) return '';
+
   const header = table[0];
   let md = '| ' + header.join(' | ') + ' |\n';
   md += '| ' + header.map(() => '---').join(' | ') + ' |\n';
   for (let i = 1; i < table.length; i++) {
     md += '| ' + table[i].join(' | ') + ' |\n';
   }
+
   return md;
 }
+
 
 /**
  * Interface for storing chapter information
