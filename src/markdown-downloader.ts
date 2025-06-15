@@ -414,19 +414,45 @@ async function downloadMarkdownFromPage(
         await fs.rename(oldPath, newPath);
         console.log(`Renamed downloaded file to: ${newFileName}`);
 
-        const tableArray: string[] = await page.evaluate(() => {
-          return (window as any).tableArray || [];
+        const tableInfos: { html: string; prevText: string; nextText: string }[] = await page.evaluate(() => {
+          const tables = Array.from(document.querySelectorAll('table'));
+          return tables.map(table => ({
+            html: table.innerHTML,
+            prevText: table.previousElementSibling?.innerText?.trim() || '',
+            nextText: table.nextElementSibling?.innerText?.trim() || ''
+          }));
         });
 
-        if (tableArray.length > 0) {
+        if (tableInfos.length > 0) {
           let mdContent = await fs.readFile(newPath, 'utf-8');
-          for (const html of tableArray) {
-            const mdTable = htmlTableToMarkdown(html);
-            const regex = /<table[\s\S]*?<\/table>/i;
-            if (regex.test(mdContent)) {
-              mdContent = mdContent.replace(regex, mdTable);
-            } else {
+          let searchStart = 0;
+          for (const info of tableInfos) {
+            const mdTable = htmlTableToMarkdown(info.html);
+            let inserted = false;
+
+            if (info.prevText) {
+              const idx = mdContent.indexOf(info.prevText, searchStart);
+              if (idx !== -1) {
+                const lineEnd = mdContent.indexOf('\n', idx + info.prevText.length);
+                const insertPos = lineEnd === -1 ? mdContent.length : lineEnd + 1;
+                mdContent = mdContent.slice(0, insertPos) + mdTable + '\n' + mdContent.slice(insertPos);
+                searchStart = insertPos + mdTable.length + 1;
+                inserted = true;
+              }
+            }
+
+            if (!inserted && info.nextText) {
+              const idx = mdContent.indexOf(info.nextText, searchStart);
+              if (idx !== -1) {
+                mdContent = mdContent.slice(0, idx) + mdTable + '\n' + mdContent.slice(idx);
+                searchStart = idx + mdTable.length + 1;
+                inserted = true;
+              }
+            }
+
+            if (!inserted) {
               mdContent += `\n\n${mdTable}\n`;
+              searchStart = mdContent.length;
             }
           }
           await fs.writeFile(newPath, mdContent);
