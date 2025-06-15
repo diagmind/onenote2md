@@ -2,13 +2,19 @@ import fs from 'fs-extra';
 import path from 'path';
 import puppeteer from 'puppeteer';
 
+// Use named import for compatibility with both ES modules and CommonJS
+import { load } from 'cheerio';
+
+
 /**
  * Convert a simple HTML table string to Markdown.
  * This implementation avoids external libraries such as cheerio by using
  * regular expressions to parse table rows and cells.
  */
 function htmlTableToMarkdown(html: string): string {
+
   const rows = Array.from(html.matchAll(/<tr[^>]*>(.*?)<\/tr>/gis));
+
   const table: string[][] = [];
 
   for (const row of rows) {
