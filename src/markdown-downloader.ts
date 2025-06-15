@@ -418,8 +418,8 @@ async function downloadMarkdownFromPage(
           const tables = Array.from(document.querySelectorAll('table'));
           return tables.map(table => ({
             html: table.innerHTML,
-            prevText: table.previousElementSibling?.innerText?.trim() || '',
-            nextText: table.nextElementSibling?.innerText?.trim() || ''
+            prevText: table.previousElementSibling?.textContent?.trim() || '',
+            nextText: table.nextElementSibling?.textContent?.trim() || ''
           }));
         });
 
