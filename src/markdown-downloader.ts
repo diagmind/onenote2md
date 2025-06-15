@@ -1,10 +1,11 @@
 import fs from 'fs-extra';
 import path from 'path';
 import puppeteer from 'puppeteer';
-import cheerio from 'cheerio';
+// Use named import for compatibility with both ES modules and CommonJS
+import { load } from 'cheerio';
 
 function htmlTableToMarkdown(html: string): string {
-  const $ = cheerio.load(html);
+  const $ = load(html);
   const rows = $('tr');
   const table: string[][] = [];
   rows.each((i, row) => {
